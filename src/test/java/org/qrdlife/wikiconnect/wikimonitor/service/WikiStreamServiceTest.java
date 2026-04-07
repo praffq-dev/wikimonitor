@@ -41,6 +41,8 @@ class WikiStreamServiceTest {
     @Mock
     private UserService userService;
     @Mock
+    private EventCacheService eventCacheService;
+    @Mock
     private Principal principal;
 
     // ── SUT ───────────────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ class WikiStreamServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        wikiStreamService = new WikiStreamService(mapper, abuseFilter, userService);
+        wikiStreamService = new WikiStreamService(mapper, abuseFilter, userService, eventCacheService, 1800000L);
 
         testUser = new User();
         testUser.setId(1L);
@@ -267,6 +269,76 @@ class WikiStreamServiceTest {
 
 
     // ══════════════════════════════════════════════════════════════════════════
+    // subscribe() with lastEventId (event replay)
+    // ══════════════════════════════════════════════════════════════════════════
+    @Nested
+    @DisplayName("subscribe() with lastEventId")
+    class SubscribeWithReplay {
+
+        @Test
+        @DisplayName("subscribe with null lastEventId behaves like normal subscribe")
+        void nullLastEventIdBehavesNormally() {
+            when(principal.getName()).thenReturn("alice");
+            when(userService.loadUserByUsername("alice")).thenReturn(testUser);
+
+            SseEmitter emitter = wikiStreamService.subscribe(principal, null);
+
+            assertNotNull(emitter);
+        }
+
+        @Test
+        @DisplayName("subscribe with empty lastEventId behaves like normal subscribe")
+        void emptyLastEventIdBehavesNormally() {
+            when(principal.getName()).thenReturn("alice");
+            when(userService.loadUserByUsername("alice")).thenReturn(testUser);
+
+            SseEmitter emitter = wikiStreamService.subscribe(principal, "");
+
+            assertNotNull(emitter);
+        }
+
+        @Test
+        @DisplayName("subscribe with unknown lastEventId does not throw")
+        void unknownLastEventIdDoesNotThrow() {
+            when(principal.getName()).thenReturn("alice");
+            when(userService.loadUserByUsername("alice")).thenReturn(testUser);
+            when(eventCacheService.getEventsSince("unknown-id")).thenReturn(java.util.List.of());
+
+            assertDoesNotThrow(() -> wikiStreamService.subscribe(principal, "unknown-id"));
+        }
+
+        @Test
+        @DisplayName("anonymous subscribe with lastEventId does not replay")
+        void anonymousWithLastEventIdNoReplay() {
+            SseEmitter emitter = wikiStreamService.subscribe(null, "some-id");
+
+            assertNotNull(emitter);
+            verifyNoInteractions(abuseFilter);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SSE timeout constant
+    // ══════════════════════════════════════════════════════════════════════════
+    @Nested
+    @DisplayName("SSE timeout")
+    class SseTimeout {
+
+        @Test
+        @DisplayName("default SSE timeout is 30 minutes in milliseconds")
+        void timeoutIs30Minutes() {
+            assertEquals(30 * 60 * 1000L, wikiStreamService.getSseTimeoutMs());
+        }
+
+        @Test
+        @DisplayName("custom timeout value is respected")
+        void customTimeoutRespected() {
+            WikiStreamService custom = new WikiStreamService(mapper, abuseFilter, userService, eventCacheService, 60000L);
+            assertEquals(60000L, custom.getSseTimeoutMs());
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // broadcastAsync()
     // ══════════════════════════════════════════════════════════════════════════
     @Nested
@@ -279,7 +351,7 @@ class WikiStreamServiceTest {
         @BeforeEach
         void setUp() throws Exception {
             broadcastAsync = WikiStreamService.class
-                    .getDeclaredMethod("broadcastAsync", RecentChange.class);
+                    .getDeclaredMethod("broadcastAsync", RecentChange.class, String.class);
             broadcastAsync.setAccessible(true);
         }
 
@@ -307,7 +379,7 @@ class WikiStreamServiceTest {
          * complete).  If no latch synchronisation is needed, pass {@code null}.
          */
         private void invokeBroadcastAsync(RecentChange rc) throws Exception {
-            broadcastAsync.invoke(wikiStreamService, rc);
+            broadcastAsync.invoke(wikiStreamService, rc, "test-event-id");
             // Give the executor pool time to finish its work.
             Thread.sleep(200);
         }

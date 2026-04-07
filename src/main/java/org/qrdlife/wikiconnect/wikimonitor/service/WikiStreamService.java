@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication;
 import org.qrdlife.wikiconnect.wikimonitor.model.RecentChange;
 import org.qrdlife.wikiconnect.wikimonitor.model.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -40,22 +41,28 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class WikiStreamService {
 
+    private final long sseTimeoutMs;
+
     private final OkHttpClient client;
     private final ObjectMapper mapper;
     private final AbuseFilterService abuseFilter;
     private final UserService userService;
+    private final EventCacheService eventCacheService;
     private final Map<SseEmitter, StreamContext> emitters = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private EventSource eventSource;
 
     private volatile String lastEventId;
-    // Global pause removed in favor of per-user pause in StreamContext
 
-    public WikiStreamService(ObjectMapper mapper, AbuseFilterService abuseFilter, UserService userService) {
+    public WikiStreamService(ObjectMapper mapper, AbuseFilterService abuseFilter, UserService userService,
+                             EventCacheService eventCacheService,
+                             @Value("${sse.timeout.ms:1800000}") long sseTimeoutMs) {
         this.mapper = mapper;
         this.abuseFilter = abuseFilter;
         this.userService = userService;
+        this.eventCacheService = eventCacheService;
+        this.sseTimeoutMs = sseTimeoutMs;
         this.client = new OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.SECONDS) // No timeout for SSE
                 .build();
@@ -93,11 +100,14 @@ public class WikiStreamService {
                 if (id != null) {
                     lastEventId = id;
                 }
-                // Global pause check removed
+                final String currentEventId = id != null ? id : lastEventId;
                 executor.submit(() -> {
                     try {
                         RecentChange rc = mapper.readValue(data, RecentChange.class);
-                        broadcastAsync(rc);
+                        if (currentEventId != null) {
+                            eventCacheService.addEvent(currentEventId, rc);
+                        }
+                        broadcastAsync(rc, currentEventId);
                     } catch (Exception e) {
                         log.error("Error processing event: {}", e.getMessage());
                     }
@@ -130,7 +140,7 @@ public class WikiStreamService {
         }
     }
 
-    private void broadcastAsync(RecentChange rc) {
+    private void broadcastAsync(RecentChange rc, String eventId) {
         if (emitters.isEmpty())
             return;
 
@@ -158,7 +168,7 @@ public class WikiStreamService {
                         String userPayload = mapper.writeValueAsString(node);
 
                         SseEmitter.SseEventBuilder event = SseEmitter.event()
-                                .id(lastEventId)
+                                .id(eventId)
                                 .data(userPayload);
 
                         emitter.send(event);
@@ -178,7 +188,18 @@ public class WikiStreamService {
      * @return An SseEmitter instance for receiving events.
      */
     public SseEmitter subscribe(Principal principal) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        return subscribe(principal, null);
+    }
+
+    /**
+     * Subscribes a client to the event stream with optional resumption.
+     *
+     * @param principal       The authenticated user principal, or null if anonymous.
+     * @param clientLastEventId The last event ID the client received, for replaying missed events.
+     * @return An SseEmitter instance for receiving events.
+     */
+    public SseEmitter subscribe(Principal principal, String clientLastEventId) {
+        SseEmitter emitter = new SseEmitter(sseTimeoutMs);
 
         User user = null;
         if (principal != null) {
@@ -188,6 +209,11 @@ public class WikiStreamService {
             } catch (Exception e) {
                 user = (User) userService.loadUserByUsername(principal.getName());
             }
+        }
+
+        // Replay missed events before registering for live events
+        if (user != null && clientLastEventId != null && !clientLastEventId.isEmpty()) {
+            replayMissedEvents(emitter, user, clientLastEventId);
         }
 
         if (user != null) {
@@ -240,6 +266,10 @@ public class WikiStreamService {
                 .forEach(ctx -> ctx.user = updatedUser);
     }
 
+    long getSseTimeoutMs() {
+        return sseTimeoutMs;
+    }
+
     @PreDestroy
     public void cleanup() {
         if (eventSource != null) {
@@ -247,6 +277,35 @@ public class WikiStreamService {
         }
         client.dispatcher().executorService().shutdown();
         scheduler.shutdown();
+    }
+
+    private void replayMissedEvents(SseEmitter emitter, User user, String clientLastEventId) {
+        List<CachedEvent> missedEvents = eventCacheService.getEventsSince(clientLastEventId);
+        int replayed = 0;
+
+        for (CachedEvent cached : missedEvents) {
+            try {
+                List<String> matchedFilters = abuseFilter.matches(cached.recentChange(), user);
+                if (!matchedFilters.isEmpty()) {
+                    ObjectNode node = mapper.valueToTree(cached.recentChange());
+                    node.put("flagged", true);
+                    node.putPOJO("matchedFilters", matchedFilters);
+                    String userPayload = mapper.writeValueAsString(node);
+
+                    SseEmitter.SseEventBuilder event = SseEmitter.event()
+                            .id(cached.id())
+                            .data(userPayload);
+                    emitter.send(event);
+                    replayed++;
+                }
+            } catch (Exception e) {
+                log.warn("Error replaying event {}: {}", cached.id(), e.getMessage());
+            }
+        }
+
+        if (replayed > 0) {
+            log.info("Replayed {} missed events for user {}", replayed, user.getUsername());
+        }
     }
 
     private static class StreamContext {

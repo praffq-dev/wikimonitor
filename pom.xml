@@ -114,6 +114,12 @@
             <version>${okhttp.version}</version>
         </dependency>
 
+        <!-- Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Utilities -->
         <dependency>
             <groupId>io.github.java-diff-utils</groupId>

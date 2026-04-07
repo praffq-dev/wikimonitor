@@ -63,10 +63,33 @@ WikiMonitor is a comprehensive tool designed to monitor Wikimedia's RecentChange
     | `MEDIAWIKI_CLIENT_ID` | OAuth2 client ID registered on Meta-Wiki |
     | `MEDIAWIKI_CLIENT_SECRET` | OAuth2 client secret |
     | `REQUIRE_ROLLBACK_RIGHT` | Set to `false` to bypass rollback rights check during local testing (default: `true`) |
+    | `SSE_TIMEOUT_MS` | SSE client connection timeout in milliseconds (default: `1800000` — 30 minutes) |
+    | `SSE_EVENT_CACHE_MAX_SIZE` | Maximum number of recent events cached in Redis for seamless client reconnection (default: `1000`) |
+    | `REDIS_HOST` | Redis server hostname (default: `redis.svc.tools.eqiad1.wikimedia.cloud` for Toolforge) |
+    | `REDIS_PORT` | Redis server port (default: `6379`) |
+    | `REDIS_PASSWORD` | Redis password, if required (default: empty — Toolforge shared Redis has no auth) |
+    | `SSE_REDIS_KEY_PREFIX` | Prefix for all Redis keys to avoid collisions on shared instances (default: `wikimonitor`). On Toolforge, set this to a unique random value — see [Toolforge Redis security](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Redis#Security) |
 
     *Note: You need to register an OAuth2 consumer on Meta-Wiki or your target MediaWiki instance to obtain the Client ID and Secret. The `ACCESS_TOKEN` is used for initial API interactions or bot actions.*
 
-3.  **Build the project:**
+3.  **Redis:**
+
+    The application requires a running Redis instance to cache recent SSE events for seamless client reconnection. On Toolforge, the shared Redis instance is used automatically. For production configuration on Toolforge, see [Help:Toolforge/Redis](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Redis). For local development, point to your own Redis instance by setting:
+
+    ```bash
+    export REDIS_HOST=localhost
+    export REDIS_PORT=6379
+    ```
+
+    **Inspect cached events:**
+    ```bash
+    redis-cli
+    > LLEN wikimonitor:sse:event-cache        # Count cached events
+    > LINDEX wikimonitor:sse:event-cache -1    # View the latest entry
+    > LRANGE wikimonitor:sse:event-cache 0 -1  # View all entries
+    ```
+
+4.  **Build the project:**
     ```bash
     mvn clean install
     ```
@@ -115,6 +138,9 @@ The application uses `src/main/resources/application.properties` for core settin
 -   **Server Port**: `server.port=8000`
 -   **Database**: MySQL (managed by Flyway)
 -   **JPA/Hibernate**: `spring.jpa.hibernate.ddl-auto=validate` ensuring schema changes are done through Flyway.
+-   **SSE Timeout**: `sse.timeout.ms` — controls how long a client SSE connection lives before the server closes it (default: `1800000` ms / 30 minutes). Clients automatically reconnect and resume using `Last-Event-ID`.
+-   **Event Cache**: Recent events are cached in **Redis** so reconnecting clients can catch up on missed events. This offloads memory from the JVM and supports multi-instance deployments. Configure via `REDIS_HOST`, `REDIS_PORT`, and `SSE_REDIS_KEY_PREFIX`.
+-   **Event Cache Size**: `sse.event-cache.max-size` — number of recent events kept in Redis for replay (default: `1000`).
 
 ## Project Structure
 

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.qrdlife.wikiconnect.wikimonitor.service.WikiStreamService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -17,10 +19,13 @@ public class MonitorController {
     private final WikiStreamService streamService;
 
     @GetMapping("/stream")
-    public SseEmitter stream(java.security.Principal principal) {
-        log.info("New stream subscription request from user: {}",
-                principal != null ? principal.getName() : "Anonymous");
-        return streamService.subscribe(principal);
+    public SseEmitter stream(java.security.Principal principal,
+                             @RequestHeader(value = "Last-Event-ID", required = false) String headerLastEventId,
+                             @RequestParam(value = "lastEventId", required = false) String paramLastEventId) {
+        String lastEventId = headerLastEventId != null ? headerLastEventId : paramLastEventId;
+        log.info("New stream subscription request from user: {}, lastEventId: {}",
+                principal != null ? principal.getName() : "Anonymous", lastEventId);
+        return streamService.subscribe(principal, lastEventId);
     }
 
     @PostMapping("/api/pause")
