@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (connectionStatus) connectionStatus.classList.remove('connected');
             // If the browser gave up (CLOSED), manually retry.
             // Otherwise the browser auto-reconnects with Last-Event-ID header.
-            if (eventSource.readyState === EventSource.CLOSED) {
+            if (eventSource && eventSource.readyState === EventSource.CLOSED) {
                 eventSource = null;
                 setTimeout(connect, 3000);
             }

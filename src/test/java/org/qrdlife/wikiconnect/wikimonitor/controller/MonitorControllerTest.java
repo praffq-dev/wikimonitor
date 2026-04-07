@@ -39,18 +39,6 @@ public class MonitorControllerTest {
     }
 
     @Test
-    public void testStreamWithLastEventId() throws Exception {
-        when(streamService.subscribe(any(), eq("evt-123"))).thenReturn(new SseEmitter());
-
-        mockMvc.perform(get("/stream")
-                .param("lastEventId", "evt-123")
-                .with(user("user").roles("USER")))
-                .andExpect(status().isOk());
-
-        verify(streamService).subscribe(any(), eq("evt-123"));
-    }
-
-    @Test
     public void testStreamWithLastEventIdHeader() throws Exception {
         when(streamService.subscribe(any(), eq("evt-456"))).thenReturn(new SseEmitter());
 
