@@ -54,6 +54,7 @@ public class WikiStreamService {
     private EventSource eventSource;
 
     private volatile String lastEventId;
+    private volatile boolean shuttingDown = false;
 
     public WikiStreamService(ObjectMapper mapper, AbuseFilterService abuseFilter, UserService userService,
                              EventCacheService eventCacheService,
@@ -97,11 +98,13 @@ public class WikiStreamService {
             @Override
             public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type,
                     @NotNull String data) {
+                if (shuttingDown) return;
                 if (id != null) {
                     lastEventId = id;
                 }
                 final String currentEventId = id != null ? id : lastEventId;
                 executor.submit(() -> {
+                    if (shuttingDown) return;
                     try {
                         RecentChange rc = mapper.readValue(data, RecentChange.class);
                         if (currentEventId != null) {
@@ -272,11 +275,21 @@ public class WikiStreamService {
 
     @PreDestroy
     public void cleanup() {
+        shuttingDown = true;
         if (eventSource != null) {
             eventSource.cancel();
         }
-        client.dispatcher().executorService().shutdown();
         scheduler.shutdown();
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        client.dispatcher().executorService().shutdown();
     }
 
     private void replayMissedEvents(SseEmitter emitter, User user, String clientLastEventId) {
