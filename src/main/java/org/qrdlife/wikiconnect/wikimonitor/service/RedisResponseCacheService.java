@@ -63,6 +63,7 @@ public class RedisResponseCacheService implements ResponseCacheService {
     /**
      * Convenience: stores with the default TTL from configuration.
      */
+    @Override
     public void put(String key, Object value) {
         put(key, value, defaultTtlSeconds);
     }

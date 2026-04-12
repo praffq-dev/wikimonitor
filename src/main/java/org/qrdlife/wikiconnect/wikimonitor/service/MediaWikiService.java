@@ -84,7 +84,7 @@ public class MediaWikiService {
             if (diffBody == null || diffBody.isBlank()) {
                 log.info("No differences found between revisions {} and {}", oldRev, newRev);
                 String result = "<div>No differences found.</div>";
-                cacheService.put(key, result, 10);
+                cacheService.put(key, result);
                 return result;
             }
 
@@ -100,7 +100,7 @@ public class MediaWikiService {
                     diffBody +
                     "</tbody>" +
                     "</table>";
-            cacheService.put(key, finalHtml, 10);
+            cacheService.put(key, finalHtml);
             return finalHtml;
 
         } catch (Exception e) {
@@ -143,7 +143,7 @@ public class MediaWikiService {
             if (compare == null || !compare.has("*")) {
                 log.warn("Inline diff HTML missing in API response");
                 DiffContent empty = new DiffContent("", "");
-                cacheService.put(key, empty, 10);
+                cacheService.put(key, empty);
                 return empty;
             }
 
@@ -163,7 +163,7 @@ public class MediaWikiService {
                     added.length(), removed.length());
 
             DiffContent result = new DiffContent(added.toString(), removed.toString());
-            cacheService.put(key, result, 10);
+            cacheService.put(key, result);
             return result;
 
         } catch (Exception e) {
@@ -209,7 +209,7 @@ public class MediaWikiService {
 
             log.debug("User {} has {} rights", username, rights.size());
             List<String> result = Collections.unmodifiableList(rights);
-            cacheService.put(key, result, 10);            return result;
+            cacheService.put(key, result);            return result;
 
         } catch (Exception e) {
             log.error("Failed to fetch user rights for user={}", username, e);
@@ -254,7 +254,7 @@ public class MediaWikiService {
 
             log.debug("User {} belongs to {} groups", username, groups.size());
             List<String> result = Collections.unmodifiableList(groups);
-            cacheService.put(key, result, 10);
+            cacheService.put(key, result);
             return result;
 
         } catch (Exception e) {

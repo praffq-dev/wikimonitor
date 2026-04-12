@@ -23,4 +23,12 @@ public interface ResponseCacheService {
      * @param ttlSeconds seconds until the entry expires
      */
     void put(String key, Object value, long ttlSeconds);
+
+    /**
+     * Stores a value in the cache with the default configured TTL.
+     *
+     * @param key   the cache key
+     * @param value the value to cache
+     */
+    void put(String key, Object value);
 }

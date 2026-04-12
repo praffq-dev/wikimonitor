@@ -122,6 +122,8 @@ public class RecentChange {
                     org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService.class);
             var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api, cacheService);
             var diffContent = service.loadDiff(revision.get("old"), revision.get("new"));
+
+            this.lineAdded = diffContent.lineAdded();
             this.lineRemoved = diffContent.lineRemoved();
             this.diffLoaded = true;
 
