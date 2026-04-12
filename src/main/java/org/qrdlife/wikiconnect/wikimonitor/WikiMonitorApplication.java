@@ -56,6 +56,10 @@ public class WikiMonitorApplication {
         return context.getBean(WikiMonitorApplication.class);
     }
 
+    public static <T> T getBean(Class<T> beanClass) {
+        return context.getBean(beanClass);
+    }
+
     public ActionApi getApiMediaWiki(String serverUrl) {
         return actionApis.computeIfAbsent(serverUrl, url -> {
             try {

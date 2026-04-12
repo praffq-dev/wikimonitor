@@ -42,10 +42,8 @@ public class WikiActionControllerTest {
     @MockitoBean
     private OAuth2Service oauth2Service;
 
-    // We use the real ObjectMapper provided by Spring Boot Test context
-    // @Autowired, if needed, but the controller uses it and we don't mock it
-    // explicitly
-    // so Spring Boot should inject a real one.
+    @MockitoBean
+    private org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService responseCacheService;
 
     @Test
     public void testUndo() throws Exception {

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService;
 import org.qrdlife.wikiconnect.wikimonitor.service.OAuth2Service;
+import org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +28,7 @@ public class WikiActionController {
 
     private final OAuth2Service oauth2Service;
     private final ObjectMapper objectMapper;
+    private final ResponseCacheService responseCacheService;
     private static final List<Pattern> ALLOWED_HOST_PATTERNS = List.of(
             Pattern.compile("^([a-z0-9-]+\\.)?wikibooks\\.org$", Pattern.CASE_INSENSITIVE),
             Pattern.compile("^([a-z0-9-]+\\.)?wikidata\\.org$", Pattern.CASE_INSENSITIVE),
@@ -103,7 +105,7 @@ public class WikiActionController {
         try {
             String apiUrl = "https://" + serverName + "/w/api.php";
             var api = oauth2Service.getActionApi(token, apiUrl);
-            var mediaWikiService = new MediaWikiService(api);
+            var mediaWikiService = new MediaWikiService(api, responseCacheService);
 
             String editResponse = mediaWikiService.undoEdit(title, revision, summary);
 
@@ -147,7 +149,7 @@ public class WikiActionController {
         try {
             String apiUrl = "https://" + serverName + "/w/api.php";
             var api = oauth2Service.getActionApi(token, apiUrl);
-            var mediaWikiService = new MediaWikiService(api);
+            var mediaWikiService = new MediaWikiService(api, responseCacheService);
 
             String rbResponse = mediaWikiService.rollbackEdit(title, user);
 

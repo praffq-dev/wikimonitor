@@ -21,13 +21,15 @@ class MediaWikiServiceTest {
     private ActionApi actionApi;
     @Mock
     private Requester requester;
+    @Mock
+    private ResponseCacheService cacheService;
 
     private MediaWikiService mediaWikiService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mediaWikiService = new MediaWikiService(actionApi);
+        mediaWikiService = new MediaWikiService(actionApi, cacheService);
         when(actionApi.getRequester()).thenReturn(requester);
     }
 

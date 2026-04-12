@@ -1,7 +1,5 @@
 package org.qrdlife.wikiconnect.wikimonitor.service;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -11,10 +9,10 @@ import org.jsoup.select.Elements;
 import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Service for interacting with MediaWiki API.
@@ -23,36 +21,12 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MediaWikiService {
 
-    // Cache for API responses. Key: "apiId:method:args", Value: response object
-    // Using 10MB maximum weight as requested.
-    private static final Cache<String, Object> responseCache = Caffeine.newBuilder()
-            .maximumWeight(10 * 1024 * 1024) // 10 MB
-            .weigher((String key, Object value) -> {
-                int weight = 0;
-                if (value instanceof String) {
-                    weight = ((String) value).length() * 2;
-                } else if (value instanceof DiffContent) {
-                    weight = (((DiffContent) value).lineAdded().length() + ((DiffContent) value).lineRemoved().length())
-                            * 2;
-                } else if (value instanceof List) {
-                    for (Object item : (List<?>) value) {
-                        if (item instanceof String) {
-                            weight += ((String) item).length() * 2;
-                        } else {
-                            weight += 100; // rough estimate for non-string items
-                        }
-                    }
-                } else {
-                    weight = 1000; // default unknown object
-                }
-                return weight + key.length() * 2; // Key overhead
-            })
-            .expireAfterWrite(10, TimeUnit.SECONDS) // Reasonable expiration
-            .build();
     private final ActionApi api;
+    private final ResponseCacheService cacheService;
 
-    public MediaWikiService(ActionApi api) {
+    public MediaWikiService(ActionApi api, ResponseCacheService cacheService) {
         this.api = api;
+        this.cacheService = cacheService;
         log.info("MediaWikiService initialized with ActionApi instance");
     }
 
@@ -68,7 +42,7 @@ public class MediaWikiService {
 
     public String getDiffHtml(long oldRev, long newRev) {
         String key = getCacheKey("diffHtml", oldRev, newRev);
-        String cached = (String) responseCache.getIfPresent(key);
+        String cached = cacheService.get(key, String.class);
         if (cached != null) {
             log.debug("Cache hit for diffHtml: {}", key);
             return cached;
@@ -110,7 +84,7 @@ public class MediaWikiService {
             if (diffBody == null || diffBody.isBlank()) {
                 log.info("No differences found between revisions {} and {}", oldRev, newRev);
                 String result = "<div>No differences found.</div>";
-                responseCache.put(key, result);
+                cacheService.put(key, result, 10);
                 return result;
             }
 
@@ -126,7 +100,7 @@ public class MediaWikiService {
                     diffBody +
                     "</tbody>" +
                     "</table>";
-            responseCache.put(key, finalHtml);
+            cacheService.put(key, finalHtml, 10);
             return finalHtml;
 
         } catch (Exception e) {
@@ -142,7 +116,7 @@ public class MediaWikiService {
         }
 
         String key = getCacheKey("loadDiff", oldRevision, newRevision);
-        DiffContent cached = (DiffContent) responseCache.getIfPresent(key);
+        DiffContent cached = cacheService.get(key, DiffContent.class);
         if (cached != null) {
             log.debug("Cache hit for loadDiff: {}", key);
             return cached;
@@ -169,7 +143,7 @@ public class MediaWikiService {
             if (compare == null || !compare.has("*")) {
                 log.warn("Inline diff HTML missing in API response");
                 DiffContent empty = new DiffContent("", "");
-                responseCache.put(key, empty);
+                cacheService.put(key, empty, 10);
                 return empty;
             }
 
@@ -189,7 +163,7 @@ public class MediaWikiService {
                     added.length(), removed.length());
 
             DiffContent result = new DiffContent(added.toString(), removed.toString());
-            responseCache.put(key, result);
+            cacheService.put(key, result, 10);
             return result;
 
         } catch (Exception e) {
@@ -198,13 +172,12 @@ public class MediaWikiService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> getUserRights(String username) {
         String key = getCacheKey("userRights", username);
-        List<String> cached = (List<String>) responseCache.getIfPresent(key);
+        String[] cached = cacheService.get(key, String[].class);
         if (cached != null) {
             log.debug("Cache hit for userRights: {}", key);
-            return cached;
+            return Arrays.asList(cached);
         }
 
         log.info("Fetching user rights for user={}", username);
@@ -236,8 +209,7 @@ public class MediaWikiService {
 
             log.debug("User {} has {} rights", username, rights.size());
             List<String> result = Collections.unmodifiableList(rights);
-            responseCache.put(key, result);
-            return result;
+            cacheService.put(key, result, 10);            return result;
 
         } catch (Exception e) {
             log.error("Failed to fetch user rights for user={}", username, e);
@@ -245,13 +217,12 @@ public class MediaWikiService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> getUserGroups(String username) {
         String key = getCacheKey("userGroups", username);
-        List<String> cached = (List<String>) responseCache.getIfPresent(key);
+        String[] cached = cacheService.get(key, String[].class);
         if (cached != null) {
             log.debug("Cache hit for userGroups: {}", key);
-            return cached;
+            return Arrays.asList(cached);
         }
 
         log.info("Fetching user groups for user={}", username);
@@ -283,7 +254,7 @@ public class MediaWikiService {
 
             log.debug("User {} belongs to {} groups", username, groups.size());
             List<String> result = Collections.unmodifiableList(groups);
-            responseCache.put(key, result);
+            cacheService.put(key, result, 10);
             return result;
 
         } catch (Exception e) {

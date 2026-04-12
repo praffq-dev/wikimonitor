@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication;
 import org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService;
 import org.qrdlife.wikiconnect.wikimonitor.service.OAuth2Service;
+import org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService;
 import org.qrdlife.wikiconnect.wikimonitor.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -22,6 +23,8 @@ public class AuthController {
 
     private final WikiMonitorApplication wikiMonitorApplication;
 
+    private final ResponseCacheService responseCacheService;
+
     @Value("${REQUIRE_ROLLBACK_RIGHT:true}")
     private boolean requireRollbackRight;
 
@@ -37,7 +40,8 @@ public class AuthController {
                         var token = oauth2Service.refreshAccessToken(refreshToken);
                         var user = oauth2Service.getUserInfo(token);
                         var mediaWikiService = new MediaWikiService(
-                                wikiMonitorApplication.getApiMediaWiki("https://meta.wikimedia.org/w/api.php"));
+                                wikiMonitorApplication.getApiMediaWiki("https://meta.wikimedia.org/w/api.php"),
+                                responseCacheService);
                         if (!mediaWikiService.checkAnyRollbackRights(user.getUsername())) {
                             return "login";
                         }
@@ -105,7 +109,7 @@ public class AuthController {
 
         try {
             var apiMeta = wikiMonitorApplication.getApiMediaWiki("https://meta.wikimedia.org/w/api.php");
-            var mediaWikiService = new MediaWikiService(apiMeta);
+            var mediaWikiService = new MediaWikiService(apiMeta, responseCacheService);
             var token = oauth2Service.getAccessToken(code);
             var user = oauth2Service.getUserInfo(token);
             if (requireRollbackRight && !mediaWikiService.checkAnyRollbackRights(user.getUsername())) {

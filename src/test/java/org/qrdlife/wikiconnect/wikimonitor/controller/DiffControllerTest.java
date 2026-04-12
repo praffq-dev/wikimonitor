@@ -20,6 +20,9 @@ public class DiffControllerTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     private org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication wikiMonitorApplication;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService responseCacheService;
+
     @Test
     @WithMockUser
     public void testGetDiff() throws Exception {

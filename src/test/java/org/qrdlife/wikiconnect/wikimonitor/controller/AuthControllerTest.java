@@ -34,6 +34,9 @@ public class AuthControllerTest {
     @MockitoBean
     private org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication wikiMonitorApplication;
 
+    @MockitoBean
+    private org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService responseCacheService;
+
     @Test
     public void testLogin() throws Exception {
         mockMvc.perform(get("/login"))

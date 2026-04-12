@@ -69,6 +69,7 @@ WikiMonitor is a comprehensive tool designed to monitor Wikimedia's RecentChange
     | `REDIS_PORT` | Redis server port (default: `6379`) |
     | `REDIS_PASSWORD` | Redis password, if required (default: empty — Toolforge shared Redis has no auth) |
     | `SSE_REDIS_KEY_PREFIX` | Prefix for all Redis keys to avoid collisions on shared instances (default: `wikimonitor`). On Toolforge, set this to a unique random value — see [Toolforge Redis security](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Redis#Security) |
+    | `RESPONSE_CACHE_TTL_SECONDS` | TTL in seconds for MediaWiki API response cache entries in Redis (default: `10`) |
 
     *Note: You need to register an OAuth2 consumer on Meta-Wiki or your target MediaWiki instance to obtain the Client ID and Secret. The `ACCESS_TOKEN` is used for initial API interactions or bot actions.*
 
@@ -139,7 +140,7 @@ The application uses `src/main/resources/application.properties` for core settin
 -   **Database**: MySQL (managed by Flyway)
 -   **JPA/Hibernate**: `spring.jpa.hibernate.ddl-auto=validate` ensuring schema changes are done through Flyway.
 -   **SSE Timeout**: `sse.timeout.ms` — controls how long a client SSE connection lives before the server closes it (default: `1800000` ms / 30 minutes). Clients automatically reconnect and resume using `Last-Event-ID`.
--   **Event Cache**: Recent events are cached in **Redis** so reconnecting clients can catch up on missed events. This offloads memory from the JVM and supports multi-instance deployments. Configure via `REDIS_HOST`, `REDIS_PORT`, and `SSE_REDIS_KEY_PREFIX`.
+-   **Caching**: All caching (API responses and SSE event replay) is backed by **Redis**, providing a unified caching layer that supports multi-instance deployments. Configure via `REDIS_HOST`, `REDIS_PORT`, and `SSE_REDIS_KEY_PREFIX`.
 -   **Event Cache Size**: `sse.event-cache.max-size` — number of recent events kept in Redis for replay (default: `1000`).
 
 ## Project Structure
@@ -161,7 +162,7 @@ The application uses `src/main/resources/application.properties` for core settin
 -   **Streaming**: OkHttp (SSE)
 -   **Authentication**: ScribeJava (OAuth2)
 -   **Templating**: Thymeleaf
--   **Utilities**: Java Diff Utils, Jsoup, Caffeine (Caching)
+-   **Utilities**: Java Diff Utils, Jsoup
 
 ## License
 

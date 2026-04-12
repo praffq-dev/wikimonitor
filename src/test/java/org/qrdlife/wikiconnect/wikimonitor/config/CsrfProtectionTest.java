@@ -28,6 +28,9 @@ public class CsrfProtectionTest {
     @MockitoBean
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
+    @MockitoBean
+    private org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService responseCacheService;
+
     @Test
     @WithMockUser
     public void postRequest_withoutCsrfToken_shouldReturn403() throws Exception {

@@ -118,10 +118,10 @@ public class RecentChange {
             }
 
             var api = WikiMonitorApplication.getInstance().getApiMediaWiki(serverUrl);
-            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api);
+            var cacheService = WikiMonitorApplication.getBean(
+                    org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService.class);
+            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api, cacheService);
             var diffContent = service.loadDiff(revision.get("old"), revision.get("new"));
-
-            this.lineAdded = diffContent.lineAdded();
             this.lineRemoved = diffContent.lineRemoved();
             this.diffLoaded = true;
 
@@ -183,7 +183,9 @@ public class RecentChange {
                 return java.util.Collections.emptyList();
             }
             var api = WikiMonitorApplication.getInstance().getApiMediaWiki(serverUrl);
-            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api);
+            var cacheService = WikiMonitorApplication.getBean(
+                    org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService.class);
+            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api, cacheService);
             return service.getUserRights(user);
         } catch (Exception e) {
             log.error("Failed to load user rights", e);
@@ -200,7 +202,9 @@ public class RecentChange {
                 return java.util.Collections.emptyList();
             }
             var api = WikiMonitorApplication.getInstance().getApiMediaWiki(serverUrl);
-            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api);
+            var cacheService = WikiMonitorApplication.getBean(
+                    org.qrdlife.wikiconnect.wikimonitor.service.ResponseCacheService.class);
+            var service = new org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService(api, cacheService);
             return service.getUserGroups(user);
         } catch (Exception e) {
             log.error("Failed to load user groups", e);
