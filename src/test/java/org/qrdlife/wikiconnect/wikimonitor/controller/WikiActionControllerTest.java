@@ -2,7 +2,7 @@ package org.qrdlife.wikiconnect.wikimonitor.controller;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
-import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
 import org.qrdlife.wikiconnect.wikimonitor.config.SecurityConfig;
 import org.qrdlife.wikiconnect.wikimonitor.service.MediaWikiService;
 import org.qrdlife.wikiconnect.wikimonitor.service.OAuth2Service;

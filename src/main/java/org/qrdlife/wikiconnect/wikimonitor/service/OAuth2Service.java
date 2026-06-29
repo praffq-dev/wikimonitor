@@ -6,8 +6,8 @@ import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
-import org.qrdlife.wikiconnect.mediawiki.client.Auth.OAuthOwnerConsumer;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.Auth.OAuthOwnerConsumer;
 import org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication;
 import org.springframework.stereotype.Service;
 

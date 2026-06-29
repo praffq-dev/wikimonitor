@@ -6,8 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
-import org.qrdlife.wikiconnect.mediawiki.client.Requester;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.Requester;
 import org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication;
 import org.qrdlife.wikiconnect.wikimonitor.model.User;
 

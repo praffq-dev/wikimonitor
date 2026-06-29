@@ -8,7 +8,7 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,7 +137,8 @@ public class MediaWikiService {
 
     public DiffContent loadDiff(Long oldRevision, Long newRevision) {
         if (oldRevision == null || newRevision == null) {
-            log.debug("loadDiff called with null revision(s): old={}, new={} — returning empty diff", oldRevision, newRevision);
+            log.debug("loadDiff called with null revision(s): old={}, new={} — returning empty diff", oldRevision,
+                    newRevision);
             return new DiffContent("", "");
         }
 
