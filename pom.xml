@@ -94,7 +94,7 @@
         <!-- MediaWiki Client -->
         <dependency>
             <groupId>org.qrdlife.wikiconnect</groupId>
-            <artifactId>core-mediawiki-client</artifactId>
+            <artifactId>MediaWiki4J</artifactId>
             <version>1.2.2</version>
         </dependency>
 

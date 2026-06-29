@@ -2,8 +2,8 @@ package org.qrdlife.wikiconnect.wikimonitor;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.oauth.OAuth20Service;
-import org.qrdlife.wikiconnect.mediawiki.client.ActionApi;
-import org.qrdlife.wikiconnect.mediawiki.client.Auth.OAuthOwnerConsumer;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
+import org.qrdlife.wikiconnect.MediaWiki4J.client.Auth.OAuthOwnerConsumer;
 import org.qrdlife.wikiconnect.wikimonitor.OAuth2.MediaWikiApi20;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
