@@ -12,6 +12,7 @@ public record StreamEventDTO(
     Integer namespace,
     String server_name,
     Map<String, Long> revision,
+    Map<String, Integer> length,
     boolean flagged,
     List<String> matchedFilters,
     Long timestamp
@@ -26,6 +27,7 @@ public record StreamEventDTO(
             rc.getNamespace(),
             rc.getServer_name(),
             rc.getRevision(),
+            rc.getLength(),
             true, // flagged
             matchedFilters,
             rc.getTimestamp()
