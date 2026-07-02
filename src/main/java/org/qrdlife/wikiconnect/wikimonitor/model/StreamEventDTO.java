@@ -13,7 +13,8 @@ public record StreamEventDTO(
     String server_name,
     Map<String, Long> revision,
     boolean flagged,
-    List<String> matchedFilters
+    List<String> matchedFilters,
+    Long timestamp
 ) {
     public static StreamEventDTO fromRecentChange(RecentChange rc, List<String> matchedFilters) {
         return new StreamEventDTO(
@@ -26,7 +27,8 @@ public record StreamEventDTO(
             rc.getServer_name(),
             rc.getRevision(),
             true, // flagged
-            matchedFilters
+            matchedFilters,
+            rc.getTimestamp()
         );
     }
 }
