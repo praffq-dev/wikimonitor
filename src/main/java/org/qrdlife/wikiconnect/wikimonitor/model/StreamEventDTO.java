@@ -12,8 +12,10 @@ public record StreamEventDTO(
     Integer namespace,
     String server_name,
     Map<String, Long> revision,
+    Map<String, Integer> length,
     boolean flagged,
-    List<String> matchedFilters
+    List<String> matchedFilters,
+    Long timestamp
 ) {
     public static StreamEventDTO fromRecentChange(RecentChange rc, List<String> matchedFilters) {
         return new StreamEventDTO(
@@ -25,8 +27,10 @@ public record StreamEventDTO(
             rc.getNamespace(),
             rc.getServer_name(),
             rc.getRevision(),
+            rc.getLength(),
             true, // flagged
-            matchedFilters
+            matchedFilters,
+            rc.getTimestamp()
         );
     }
 }
