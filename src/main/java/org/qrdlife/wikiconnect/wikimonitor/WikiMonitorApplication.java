@@ -2,6 +2,8 @@ package org.qrdlife.wikiconnect.wikimonitor;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.oauth.OAuth20Service;
+
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
 import org.qrdlife.wikiconnect.MediaWiki4J.client.ActionApi;
 import org.qrdlife.wikiconnect.MediaWiki4J.client.Auth.OAuthOwnerConsumer;
 import org.qrdlife.wikiconnect.wikimonitor.OAuth2.MediaWikiApi20;
@@ -64,7 +66,7 @@ public class WikiMonitorApplication {
                 }
 
                 ActionApi api = new ActionApi(url + "/w/api.php");
-                api.setFileCookie(new File(".cookies"));
+                api.setCookieStore(new BasicCookieStore());
                 api.setUserAgent(userAgent);
                 api.build();
 
