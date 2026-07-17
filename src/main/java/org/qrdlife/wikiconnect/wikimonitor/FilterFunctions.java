@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.qrdlife.wikiconnect.wikimonitor.util.PatternCache;
 
 public class FilterFunctions {
 
@@ -214,7 +215,7 @@ public class FilterFunctions {
             return false;
         }
         try {
-            return Pattern.compile(regex).matcher(text).find();
+            return PatternCache.getDefault(regex).matcher(text).find();
         } catch (PatternSyntaxException e) {
             return false;
         }

@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.qrdlife.wikiconnect.wikimonitor.WikiMonitorApplication;
+import org.qrdlife.wikiconnect.wikimonitor.util.PatternCache;
 
 import java.util.Map;
+import java.util.regex.PatternSyntaxException;
 
 @Slf4j
 @Data
@@ -212,14 +214,17 @@ public class RecentChange {
     public int rcount(String regex, String text) {
         if (text == null || regex == null)
             return 0;
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile(regex,
-                java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL);
-        java.util.regex.Matcher m = p.matcher(text);
-        int count = 0;
-        while (m.find()) {
-            count++;
+        try {
+            java.util.regex.Pattern p = PatternCache.getCaseInsensitiveDotAll(regex);
+            java.util.regex.Matcher m = p.matcher(text);
+            int count = 0;
+            while (m.find()) {
+                count++;
+            }
+            return count;
+        } catch (PatternSyntaxException e) {
+            return 0;
         }
-        return count;
     }
 
     @JsonIgnore

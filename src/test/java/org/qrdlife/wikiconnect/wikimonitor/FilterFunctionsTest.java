@@ -56,6 +56,8 @@ class FilterFunctionsTest {
     @Test
     void testRegex() {
         assertEquals(2, functions.regexCount("test test", "test"));
+        assertEquals(0, functions.regexCount("test test", "[invalid regex"));
+        assertEquals(0, functions.rcount("test test", "[invalid regex"));
     }
 
     @Test
