@@ -29,7 +29,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -193,28 +192,32 @@ public class WikiStreamService {
             if (context.paused)
                 return;
 
-            CompletableFuture.runAsync(() -> {
-                try {
-                    // While replay is in progress, queue live events for drainPendingEvents().
-                    synchronized (context) {
-                        if (context.replaying) {
-                            context.pending.add(new PendingEvent(eventId, rc));
-                            return;
+            try {
+                executor.execute(() -> {
+                    try {
+                        // While replay is in progress, queue live events for drainPendingEvents().
+                        synchronized (context) {
+                            if (context.replaying) {
+                                context.pending.add(new PendingEvent(eventId, rc));
+                                return;
+                            }
                         }
+                        sendIfMatched(emitter, context, rc, eventId);
+                    } catch (JsonProcessingException e) {
+                        log.error("Error serializing RecentChange", e);
+                    } catch (IOException e) {
+                        log.warn("Client disconnected", e);
+                        emitter.complete();
+                        emitters.remove(emitter);
+                    } catch (Exception e) {
+                        log.error("Unexpected error while broadcasting", e);
+                        emitter.completeWithError(e);
+                        emitters.remove(emitter);
                     }
-                    sendIfMatched(emitter, context, rc, eventId);
-                } catch (JsonProcessingException e) {
-                    log.error("Error serializing RecentChange", e);
-                } catch (IOException e) {
-                    log.warn("Client disconnected", e);
-                    emitter.complete();
-                    emitters.remove(emitter);
-                } catch (Exception e) {
-                    log.error("Unexpected error while broadcasting", e);
-                    emitter.completeWithError(e);
-                    emitters.remove(emitter);
-                }
-            }, executor);
+                });
+            } catch (RejectedExecutionException ignored) {
+                // Executor is shutting down; drop this dispatch, same pattern as onEvent().
+            }
         });
     }
 
